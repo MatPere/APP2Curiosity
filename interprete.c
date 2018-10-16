@@ -60,15 +60,10 @@ int interprete (sequence_t* seq, bool debug)
                 case RATE: return RATE;
                 case REUSSI: break;
             }
-        if (commande== '{') {
-            if (argument == 0) {
-              }
+       
+          
 
-
-          }
-          while
-
-        }
+        
 
         } else if ((commande=='g')||(commande=='G')) {
             gauche();
