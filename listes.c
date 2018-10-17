@@ -28,7 +28,7 @@ void conversion (char *texte, sequence_t *seq)
   for ( longueur = 0 ; texte[longueur]!=0 ; longueur++);
   int j = longueur-1 ;
   while (  j>=0 ){
-    while ((texte[j] == ' ')&&(j>=0)) j--;
+    while (((texte[j] == ' ')||(texte[j] == '\n'))&&(j>=0)) j--;
     if (j >= 0) ajout_tete(texte[j], seq);
     j--;
   }
