@@ -28,6 +28,68 @@ void stop (void)
 
 
 
+void traiter_condition(sequence_t * seq, int n){
+
+  int profondeur ;
+  int non_vide ;
+  cellule_t *courant = seq->tete->suivant;
+  cellule_t *premier = courant;
+  cellule_t *dernier = courant;
+
+  if (n==0){
+    profondeur = 1;
+    while (profondeur > 0) {
+      if (courant->command=='{') profondeur++;
+      if (courant->command=='}') profondeur--;
+      courant=courant->suivant;
+    }
+    courant=courant->suivant ;
+    profondeur = 1;
+    premier=courant ;
+    if (premier->command=='}'){
+      non_vide = 0;
+    } else {
+      while (profondeur > 0) {
+        if (courant->command=='{') profondeur++;
+        if (courant->command=='}') profondeur--;
+        if ((courant->suivant->command=='}')&&(profondeur==1)) dernier = &*courant;
+        courant=courant->suivant;
+      }
+      non_vide = 1;
+    }
+ } else {
+   profondeur = 1;
+   premier=courant ;
+   if (premier->command=='}'){
+     non_vide = 0;
+   } else {
+     while (profondeur > 0) {
+       if (courant->command=='{') profondeur++;
+       if (courant->command=='}') profondeur--;
+       if ((courant->suivant->command=='}')&&(profondeur==1)) dernier = &*courant;
+       courant=courant->suivant;
+     }
+     non_vide = 1;
+   }
+     courant=courant->suivant ;
+     profondeur = 1;
+     while (profondeur > 0) {
+       if (courant->command=='{') profondeur++;
+       if (courant->command=='}') profondeur--;
+       courant=courant->suivant;
+     }
+
+ }
+
+ if (non_vide){
+    seq->tete->suivant = premier;
+    dernier->suivant = courant->suivant;
+
+  } else seq->tete->suivant=courant->suivant;
+
+}
+
+
 int interprete (sequence_t* seq, bool debug)
 {
     // Version temporaire a remplacer par
@@ -60,11 +122,8 @@ int interprete (sequence_t* seq, bool debug)
                 case RATE: return RATE;
                 case REUSSI: break;
             }
-       
-          
-
-        
-
+        } else if (commande=='{') {
+            traiter_condition(seq, argument);
         } else if ((commande=='g')||(commande=='G')) {
             gauche();
         } else if ((commande=='d')||(commande=='D')) {
