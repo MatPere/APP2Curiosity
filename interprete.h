@@ -1,6 +1,6 @@
 #ifndef INTERPRETE_H
 #define INTERPRETE_H
-
-int interprete (sequence_t* seq, bool debug);
+void traiter(cellule_t ** point, int * globale, int* victoire);
+int interprete (sequence_t * seq, bool debug);
 
 #endif

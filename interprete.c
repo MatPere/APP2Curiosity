@@ -7,6 +7,7 @@
 #endif
 #include "listes.h"
 #include "curiosity.h"
+#include "interprete.h"
 
 /*
  *  Auteur(s) :
@@ -15,7 +16,7 @@
  *
  */
 
-void stop (void)
+void stop(void)
 {
 #ifdef NCURSES
     getch();  /* attente appui sur touche */
@@ -28,149 +29,165 @@ void stop (void)
 
 
 
-void traiter_condition(sequence_t * seq, int n){
 
-  int profondeur ;
-  int non_vide ;
-  cellule_t *courant = seq->tete->suivant;
-  cellule_t *premier = courant;
-  cellule_t *dernier = courant;
-
-  if (n==0){
-    profondeur = 1;
-    while (profondeur > 0) {
-      if (courant->command=='{') profondeur++;
-      if (courant->command=='}') profondeur--;
-      courant=courant->suivant;
-    }
-    courant=courant->suivant ;
-    profondeur = 1;
-    premier=courant ;
-    if (premier->command=='}'){
-      non_vide = 0;
-    } else {
-      while (profondeur > 0) {
-        if (courant->command=='{') profondeur++;
-        if (courant->command=='}') profondeur--;
-        if ((courant->suivant->command=='}')&&(profondeur==1)) dernier = &*courant;
-        courant=courant->suivant;
-      }
-      non_vide = 1;
-    }
- } else {
-   profondeur = 1;
-   premier=courant ;
-   if (premier->command=='}'){
-     non_vide = 0;
-   } else {
-     while (profondeur > 0) {
-       if (courant->command=='{') profondeur++;
-       if (courant->command=='}') profondeur--;
-       if ((courant->suivant->command=='}')&&(profondeur==1)) dernier = &*courant;
-       courant=courant->suivant;
-     }
-     non_vide = 1;
-   }
-     courant=courant->suivant ;
-     profondeur = 1;
-     while (profondeur > 0) {
-       if (courant->command=='{') profondeur++;
-       if (courant->command=='}') profondeur--;
-       courant=courant->suivant;
-     }
-
- }
-
- if (non_vide){
-    seq->tete->suivant = premier;
-    dernier->suivant = courant->suivant;
-
-  } else seq->tete->suivant=courant->suivant;
-
+int isvictoire(int* vic){
+  return *vic!=999 ;
 }
+void traiter_condition(cellule_t ** courant, int* globale, int* victoire){
+  *courant=(**courant).suivant;
+  int profondeur = 1;
+  if (*globale==0){
+
+    while (profondeur > 0) {
+      if ((**courant).command=='{') profondeur++;
+      if ((**courant).command=='}') profondeur--;
+      *courant=(**courant).suivant;
+    }
+    *courant=(**courant).suivant;
+    while((**courant).command != '?'){
+      traiter(courant,globale, victoire);
+      if (isvictoire(victoire)) return;
+    }
+
+  }
+  if (*globale!=0){
+    while((**courant).command != '}'){
+      traiter(courant,globale, victoire);
+      if (isvictoire(victoire)) return;
+    }
+    while (profondeur > 0) {
+      if ((**courant).command=='{') profondeur++;
+      if ((**courant).command=='}') profondeur--;
+      *courant=(**courant).suivant;
+    }
+    traiter(courant,globale, victoire);
+      if (isvictoire(victoire)) return;
+    
+
+  }
+} 
 
 
 int interprete (sequence_t* seq, bool debug)
 {
-    // Version temporaire a remplacer par
-    //  - une lecture des commandes dans la liste chainee
-    // suivie par
-    //  - une interpretation des commandes lues (partie fournie)
-    char argument = 0;
-    char commande = 0;
-
-
-     /* debug = True À enlever par la suite et utiliser "-d" sur la ligne de commandes */
-
+    int globale = 0;
     printf ("Programme : ");
     afficher(seq);
     printf ("\n");
-    if (debug) stop();
-    // À partir d'ici, beaucoup de choses à modifier dans la suite.
+    //if (debug) stop();
+    
+    
+    int victoire = 999;
+    cellule_t * p = seq->tete;
+    cellule_t ** pointeur;
+    *pointeur = p;
+    while ( pointeur != NULL && *pointeur != NULL) {
+      traiter(pointeur, &globale, &victoire);
+      printf("Viktoir ! ! ! ! : %d \n", victoire);
+      switch (victoire) {
+            case VICTOIRE: return VICTOIRE;
+            case RATE: return RATE;
+            case REUSSI : break;
+            default : break;
+      
+      //if (debug) stop();
 
-     //à modifier: premiere commande de la sequence
-
-    while ( seq->tete != NULL) {
-        commande = seq->tete->command ;
-
-        if ((commande>='0')&&(commande<='9')) {
-          argument = commande - '0';
-
-        } else if ((commande=='a')||(commande=='A')) {
-            switch (avance()) {
-                case VICTOIRE: return VICTOIRE;
-                case RATE: return RATE;
-                case REUSSI: break;
-            }
-        } else if (commande=='{') {
-            traiter_condition(seq, argument);
-        } else if ((commande=='g')||(commande=='G')) {
-            gauche();
-        } else if ((commande=='d')||(commande=='D')) {
-            droite();
-        } else if ((commande=='p')||(commande=='P')) {
-            pose(argument);
-
-        } else if ((commande=='m')||(commande=='M')) {
-            argument=mesure(argument);
-            printf("Résultat de la mesure : ");
-            switch (argument) {
-              case 0 : {
-                printf("rien\n" );
-                break ;
-              }
-              case 1 : {
-                printf("marque\n" );
-                break ;
-              }
-              case 2 : {
-                printf("eau\n" );
-                break ;
-              }
-              case 3 : {
-                printf("rocher\n" );
-                break ;
-              }
-            }
-
-
-        } else {
-            printf ("Commande inconnue: %c\n", commande);
-        }
-
-        seq->tete= seq->tete->suivant;
-        afficherCarte();
-        printf("Valeur : %d\n",argument);
-        printf ("Programme : ");
-        afficher(seq);
-        printf ("\n");
-        if (debug) stop();
+      }
     }
-
-
-
-    /* Si on sort de la boucle sans arriver sur le @
-     * c'est raté :-( */
-
     return CIBLERATEE;
+    
+  
 }
+void traiter(cellule_t ** point, int *globale, int* victoire){
+    
+    //printf("########### %c ############\n", (**point).command);
+     /* debug = True À enlever par la suite et utiliser "-d" sur la ligne de commandes */
+    if (point==NULL) {} 
+    else {
+      if (*point==NULL) {*victoire=CIBLERATEE;} 
+      
+      
+        
+      
+      // À partir d'ici, beaucoup de choses à modifier dans la suite.
+
+      //à modifier: premiere commande de la sequence
+
+      
+      if (((**point).command>='0')&&((**point).command<='9')) {
+        *globale = (**point).command - '0';
+        
+
+      } else if (((**point).command=='a')||((**point).command=='A')) {
+          //printf("On avance  ###################>");
+          switch (avance()) {
+              case VICTOIRE: 
+                *victoire = VICTOIRE;
+                break;
+              case RATE: 
+                *victoire = RATE;
+                break;
+              case REUSSI: 
+                *victoire = REUSSI;
+                break;
+          }
+      } else if ((**point).command=='{') {
+          traiter_condition(point, globale, victoire);
+      } else if (((**point).command=='g')||((**point).command=='G')) {
+          gauche();
+      } else if (((**point).command=='d')||((**point).command=='D')) {
+          droite();
+      } else if (((**point).command=='p')||((**point).command=='P')) {
+          pose(*globale);
+
+      } else if (((**point).command=='m')||((**point).command=='M')) {
+          *globale=mesure(*globale);
+          printf("Résultat de la mesure : ");
+          switch (*globale) {
+            case 0 : {
+              printf("rien\n" );
+              break ;
+            }
+            case 1 : {
+              printf("marque\n" );
+              break ;
+            }
+            case 2 : {
+              printf("eau\n" );
+              break ;
+            }
+            case 3 : {
+              printf("rocher\n" );
+              break ;
+            }
+          }
+
+
+      } else if (((**point).command=='}')||((**point).command=='?')||((**point).command==']')){}
+      else {
+          printf ("commande inconnue: %c\n", (**point).command);
+      }
+      
+      afficherCarte();
+      printf("Valeur : %d\n",*globale);
+      printf ("Programme : ");
+      sequence_t seq ;
+      seq.tete = *point ;
+
+      afficher(&seq);
+      printf ("\n");
+
+      printf("!!!1 point = %c\n", (**point).command);
+      *point=(**point).suivant ;
+      //if (*point!=NULL){
+      //  printf("!!!2 point = %c\n", (**point).command);
+      //} 
+    }  
+    return;
+}
+
+/* Si on sort de la boucle sans arriver sur le @
+   c'est raté :-( */
+
+
+
